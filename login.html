@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 - 건설 하자 민원 관리 시스템</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', '맑은 고딕', 'Malgun Gothic', sans-serif;
+    background-color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-box {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+  }
+  .login-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 28px;
+    color: #222;
+  }
+  .form-group {
+    margin-bottom: 18px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 6px;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus {
+    border-color: #4a90d9;
+  }
+  .links {
+    text-align: right;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 20px;
+  }
+  .links a {
+    color: #999;
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: #4a90d9;
+  }
+  .login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #4a90d9;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .login-btn:hover {
+    background-color: #357ab8;
+  }
+  .login-btn:disabled {
+    background-color: #9ec5e8;
+    cursor: not-allowed;
+  }
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="login-box">
+    <h1 class="login-title">로그인</h1>
+
+    <div class="form-group">
+      <label for="username">아이디</label>
+      <input type="text" id="username" autocomplete="username">
+    </div>
+
+    <div class="form-group">
+      <label for="password">비밀번호</label>
+      <input type="password" id="password" autocomplete="current-password">
+    </div>
+
+    <div class="links">
+      <a href="/find-id.html">아이디 찾기</a> | <a href="/signup.html">회원가입</a>
+    </div>
+
+    <button class="login-btn" id="loginBtn">로그인</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const btn = document.getElementById('loginBtn');
+  const toast = document.getElementById('toast');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  let toastTimer = null;
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3000);
+  }
+
+  async function login() {
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        location.href = data.redirect;
+        return;
+      }
+      showToast(data.message || '로그인에 실패했습니다');
+    } catch (err) {
+      showToast('서버와 통신할 수 없습니다');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  btn.addEventListener('click', login);
+
+  // 엔터 키로도 로그인
+  [usernameInput, passwordInput].forEach(input => {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  });
+</script>
+</body>
+</html>

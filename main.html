@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>건설 하자 도우미</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', '맑은 고딕', 'Malgun Gothic', sans-serif;
+    background-color: #fff;
+    color: #222;
+  }
+
+  /* 헤더 */
+  .header {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #eee;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-actions button,
+  .header-actions a {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 13px;
+    text-decoration: none;
+    transition: color 0.2s;
+    padding: 4px 6px;
+    font-family: inherit;
+  }
+  .header-actions button:hover,
+  .header-actions a:hover {
+    color: #222;
+  }
+  .header-actions .divider {
+    color: #ccc;
+    font-size: 13px;
+  }
+
+  /* 컨테이너 */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+  }
+
+  /* 섹션 박스 (검은 테두리) */
+  .section {
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    background: #fff;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* 채팅 */
+  .chat-section {
+    height: 60vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .msg {
+    display: flex;
+    max-width: 75%;
+  }
+  .msg.user { align-self: flex-end; }
+  .msg.ai   { align-self: flex-start; }
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.user .bubble {
+    background: #4a90d9;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai .bubble {
+    background: #f1f1f1;
+    color: #222;
+    border-bottom-left-radius: 4px;
+    padding: 8px;
+  }
+  .msg.user .thumb {
+    max-width: 200px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .ai-card {
+    background: #f5f9ff;
+    border: 1px solid #d5e3f5;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.6;
+    min-width: 280px;
+  }
+  .ai-card .row {
+    display: flex;
+    margin-bottom: 4px;
+  }
+  .ai-card .row:last-child { margin-bottom: 0; }
+  .ai-card .label {
+    flex: 0 0 110px;
+    color: #666;
+    font-weight: 600;
+  }
+  .ai-card .value {
+    flex: 1;
+    color: #222;
+  }
+
+  /* 입력창 */
+  .chat-input-area {
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+  }
+  .preview {
+    display: none;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .preview.show { display: flex; }
+  .preview img {
+    max-height: 80px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+  .preview .remove {
+    margin-left: 8px;
+    font-size: 12px;
+    color: #d32f2f;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .input-row input[type="text"] {
+    flex: 1;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+  }
+  .input-row input[type="text"]:focus {
+    border-color: #4a90d9;
+  }
+  .icon-btn,
+  .send-btn {
+    height: 40px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    border: none;
+    font-family: inherit;
+  }
+  .icon-btn {
+    padding: 0 12px;
+    background: #e0e0e0;
+    color: #333;
+  }
+  .icon-btn:hover { background: #d0d0d0; }
+  .send-btn {
+    padding: 0 18px;
+    background: #4a90d9;
+    color: #fff;
+    font-weight: 500;
+  }
+  .send-btn:hover:not(:disabled) { background: #357ab8; }
+  .send-btn:disabled {
+    background: #9ec5e8;
+    cursor: not-allowed;
+  }
+
+  /* 게시판 */
+  .new-post-btn {
+    background: #4a90d9;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .new-post-btn:hover { background: #357ab8; }
+  .sort-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .sort-toggle button {
+    background: none;
+    border: 1px solid #ddd;
+    padding: 4px 10px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #666;
+    font-family: inherit;
+  }
+  .sort-toggle button.active {
+    background: #4a90d9;
+    color: #fff;
+    border-color: #4a90d9;
+  }
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .post-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    background: #fff;
+  }
+  .post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  }
+  .post-thumb {
+    width: 100%;
+    height: 140px;
+    background: #f5f5f5;
+    background-size: cover;
+    background-position: center;
+  }
+  .post-info { padding: 10px 12px; }
+  .post-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .post-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+  }
+  .post-tag {
+    background: #fff3e0;
+    color: #ef6c00;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .empty {
+    text-align: center;
+    color: #999;
+    padding: 30px 0;
+    font-size: 13px;
+    grid-column: 1 / -1;
+  }
+
+  /* 동의 모달 */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 10px;
+    padding: 24px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  }
+  .modal-text {
+    color: #222;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .modal-actions button {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .modal-btn-agree {
+    background: #4a90d9;
+    color: #fff;
+  }
+  .modal-btn-deny {
+    background: #e0e0e0;
+    color: #333;
+  }
+</style>
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="/main.html">건설 하자 도우미</a>
+    <div class="header-actions" id="headerActions"></div>
+  </header>
+
+  <div class="container">
+    <!-- AI 채팅 -->
+    <section class="section chat-section">
+      <div class="section-header">
+        <div class="section-title">AI 채팅</div>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area">
+        <div class="preview" id="preview">
+          <img id="previewImg" alt="첨부 미리보기">
+          <button type="button" class="remove" id="removePreview">제거</button>
+        </div>
+        <div class="input-row">
+          <input type="file" id="fileInput" accept="image/*" hidden>
+          <button type="button" class="icon-btn" id="attachBtn">사진 첨부</button>
+          <input type="text" id="chatInput" placeholder="하자 증상이나 사진에 대한 설명을 입력하세요">
+          <button type="button" class="send-btn" id="sendBtn">전송</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 게시판 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title">하자 사례 게시판</div>
+        <button class="new-post-btn" id="newPostBtn">+ 새 게시물 작성</button>
+      </div>
+      <div class="sort-toggle">
+        <button data-sort="recommend" class="active">추천 순</button>
+        <button data-sort="latest">최신 순</button>
+      </div>
+      <div class="post-grid" id="postGrid"></div>
+    </section>
+  </div>
+
+  <!-- 동의 모달 -->
+  <div class="modal-backdrop" id="consentModal">
+    <div class="modal">
+      <div class="modal-text">해당 채팅 기록과 하자유형 사진은 AI 학습용으로 이용하려고 합니다. 동의하시겠습니까?</div>
+      <div class="modal-actions">
+        <button class="modal-btn-deny" id="consentDeny">거부</button>
+        <button class="modal-btn-agree" id="consentAgree">동의</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ─────────── 헤더 (로그인 상태에 따른 렌더) ───────────
+  async function loadHeader() {
+    const headerEl = document.getElementById('headerActions');
+    let user = null;
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        user = data.user || (data.loggedIn ? data.user : null);
+      }
+    } catch (err) { /* 비로그인 처리 */ }
+
+    if (user) {
+      headerEl.innerHTML =
+        '<a href="/mypage.html">내 정보</a>' +
+        '<span class="divider">|</span>' +
+        '<button id="logoutBtn">로그아웃</button>';
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch(e) {}
+        location.href = '/login.html';
+      });
+    } else {
+      headerEl.innerHTML =
+        '<a href="/login.html">로그인</a>' +
+        '<span class="divider">|</span>' +
+        '<a href="/signup.html">회원가입</a>';
+    }
+  }
+
+  // ─────────── 채팅 ───────────
+  const chatMessages = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const fileInput = document.getElementById('fileInput');
+  const attachBtn = document.getElementById('attachBtn');
+  const preview = document.getElementById('preview');
+  const previewImg = document.getElementById('previewImg');
+  const removePreview = document.getElementById('removePreview');
+  const consentModal = document.getElementById('consentModal');
+
+  let attachedFile = null;
+
+  // 사진 첨부
+  attachBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    attachedFile = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      previewImg.src = ev.target.result;
+      preview.classList.add('show');
+    };
+    reader.readAsDataURL(file);
+  });
+  removePreview.addEventListener('click', () => {
+    attachedFile = null;
+    fileInput.value = '';
+    preview.classList.remove('show');
+  });
+
+  // 동의 모달 (입력창 첫 focus 시, 같은 세션에 다시 안 띄움)
+  chatInput.addEventListener('focus', () => {
+    if (!sessionStorage.getItem('ai_consent')) {
+      consentModal.classList.add('show');
+    }
+  });
+  document.getElementById('consentAgree').addEventListener('click', () => {
+    sessionStorage.setItem('ai_consent', 'true');
+    consentModal.classList.remove('show');
+  });
+  document.getElementById('consentDeny').addEventListener('click', () => {
+    sessionStorage.setItem('ai_consent', 'false');
+    consentModal.classList.remove('show');
+  });
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  function appendUserMessage(text, imgSrc) {
+    const div = document.createElement('div');
+    div.className = 'msg user';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.className = 'thumb';
+      bubble.appendChild(img);
+    }
+    if (text) {
+      const span = document.createElement('div');
+      span.textContent = text;
+      bubble.appendChild(span);
+    }
+    div.appendChild(bubble);
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function appendAIMessage(payload) {
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    if (typeof payload === 'string') {
+      bubble.textContent = payload;
+    } else {
+      const card = document.createElement('div');
+      card.className = 'ai-card';
+      const fields = [
+        ['하자 유형', payload.defectType],
+        ['예상 수리 비용', payload.estimatedCost],
+        ['추천 수리 방법', payload.repairMethod],
+        ['추천 수리 업체', payload.recommendedVendor]
+      ];
+      for (const [label, value] of fields) {
+        if (!value) continue;
+        const row = document.createElement('div');
+        row.className = 'row';
+        const l = document.createElement('div'); l.className = 'label'; l.textContent = label;
+        const v = document.createElement('div'); v.className = 'value'; v.textContent = value;
+        row.appendChild(l); row.appendChild(v);
+        card.appendChild(row);
+      }
+      bubble.appendChild(card);
+    }
+    div.appendChild(bubble);
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text && !attachedFile) return;
+
+    const consent = sessionStorage.getItem('ai_consent') === 'true';
+    const imgSrc = attachedFile ? previewImg.src : null;
+    appendUserMessage(text, imgSrc);
+
+    const formData = new FormData();
+    formData.append('query', text);
+    formData.append('consent', String(consent));
+    if (attachedFile) formData.append('image', attachedFile);
+
+    chatInput.value = '';
+    attachedFile = null;
+    fileInput.value = '';
+    preview.classList.remove('show');
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/chatbot', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok) appendAIMessage(data);
+      else appendAIMessage(data.error || '응답을 받지 못했습니다.');
+    } catch (err) {
+      appendAIMessage('서버와 통신할 수 없습니다.');
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+  // ─────────── 게시판 ───────────
+  const postGrid = document.getElementById('postGrid');
+  let currentSort = 'recommend';
+
+  document.querySelectorAll('.sort-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sort-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSort = btn.dataset.sort;
+      loadPosts();
+    });
+  });
+
+  document.getElementById('newPostBtn').addEventListener('click', () => {
+    location.href = '/post_new.html';
+  });
+
+  function formatDate(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  async function loadPosts() {
+    try {
+      const res = await fetch('/api/posts?sort=' + currentSort + '&limit=20&offset=0');
+      const posts = await res.json();
+
+      if (!Array.isArray(posts) || posts.length === 0) {
+        postGrid.innerHTML = '<div class="empty">아직 게시물이 없습니다.</div>';
+        return;
+      }
+
+      postGrid.innerHTML = posts.map(p => `
+        <div class="post-card" data-id="${p.post_id}">
+          <div class="post-thumb" style="${p.photo_path ? `background-image:url('${escapeHtml(p.photo_path)}')` : ''}"></div>
+          <div class="post-info">
+            <div class="post-title">${escapeHtml(p.title || '')}</div>
+            <div class="post-meta">
+              <span class="post-tag">${escapeHtml(p.defect_type || '미분류')}</span>
+              <span>♥ ${p.recommend_count || 0} · ${formatDate(p.created_at)}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      postGrid.querySelectorAll('.post-card').forEach(card => {
+        card.addEventListener('click', () => {
+          location.href = '/post_detail.html?id=' + card.dataset.id;
+        });
+      });
+    } catch (err) {
+      postGrid.innerHTML = '<div class="empty">게시물을 불러올 수 없습니다.</div>';
+    }
+  }
+
+  // 초기 로드
+  loadHeader();
+  loadPosts();
+</script>
+</body>
+</html>
